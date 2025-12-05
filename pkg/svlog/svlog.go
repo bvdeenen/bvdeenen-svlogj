@@ -6,24 +6,16 @@ import (
 	"os/exec"
 	"regexp"
 	"strconv"
+	"svlogj/pkg/types"
 	"sync/atomic"
 	"time"
 )
 
-type Info struct {
-	Timestamp time.Time
-	Facility  string
-	Level     string
-	Entity    string
-	Pid       int
-	Message   string
+func Svlog(c types.ParseConfig) {
+	ParseLog(false, HandleInterpretedLine, c)
 }
 
-func Svlog() {
-	ParseLog(false, handleInterpretedLine)
-}
-
-func ParseLog(stop_when_finished bool, line_handler func(Info)) {
+func ParseLog(stop_when_finished bool, line_handler func(types.Info, types.ParseConfig), c types.ParseConfig) {
 
 	line_pattern := regexp.MustCompile(`^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+) ((\w+)\.(\w+):)?(.*).*$`)
 
@@ -65,7 +57,7 @@ func ParseLog(stop_when_finished bool, line_handler func(Info)) {
 			fmt.Printf("CANT PARSE TIMESTAMP %s\n", m[1])
 			continue
 		}
-		info := Info{
+		info := types.Info{
 			Timestamp: t,
 			Facility:  m[3],
 			Level:     m[4],
@@ -88,12 +80,21 @@ func ParseLog(stop_when_finished bool, line_handler func(Info)) {
 				}
 			}
 		}
-		line_handler(info)
+		line_handler(info, c)
 		running.Store(true)
 	}
 }
 
-func handleInterpretedLine(info Info) {
+func HandleInterpretedLine(info types.Info, parse_config types.ParseConfig) {
+	if len(parse_config.Entity) != 0 && info.Entity != parse_config.Entity {
+		return
+	}
+	if len(parse_config.Level) != 0 && info.Level != parse_config.Level {
+		return
+	}
+	if len(parse_config.Facility) != 0 && info.Facility != parse_config.Facility {
+		return
+	}
 	_, _ = fmt.Printf("%v \033[32m%s\033[0m.\033[36m%s\033[0m \033[31m%s\033[0m (%d) %s \n",
 		info.Timestamp, info.Facility, info.Level, info.Entity, info.Pid, info.Message)
 }

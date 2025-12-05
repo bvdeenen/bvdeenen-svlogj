@@ -1,11 +1,24 @@
 package utils
 
-import "slices"
+import (
+	"slices"
+
+	"github.com/spf13/pflag"
+)
 
 func Check(e error) {
 	if e != nil {
 		panic(e)
 	}
+}
+
+func GetBool(flags *pflag.FlagSet, name string) bool {
+	g, _ := flags.GetBool(name)
+	return g
+}
+func GetString(flags *pflag.FlagSet, name string) string {
+	g, _ := flags.GetString(name)
+	return g
 }
 
 func RemoveEmptyStrings(l []string) []string {

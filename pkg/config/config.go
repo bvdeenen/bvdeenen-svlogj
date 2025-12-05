@@ -12,24 +12,18 @@ import (
 	"slices"
 	"strings"
 	"svlogj/pkg/svlog"
+	"svlogj/pkg/types"
 	"svlogj/pkg/utils"
 
 	"github.com/adrg/xdg"
 )
-
-type Config struct {
-	Facilities []string `json:"facilities"`
-	Levels     []string `json:"levels"`
-	Entities   []string `json:"entities"`
-	Services   []string `json:"services"`
-}
 
 func ParseAndStoreConfig() {
 	config := generateConfig()
 	storeConfig(config)
 }
 
-func generateConfig() Config {
+func generateConfig() types.Config {
 	facilities := make(map[string]struct{})
 	levels := make(map[string]struct{})
 	what := make(map[string]struct{})
@@ -80,10 +74,10 @@ func generateConfig() Config {
 	})
 
 	// parse through all of the socklog files to find all the entities
-	svlog.ParseLog(true, func(info svlog.Info) {
+	svlog.ParseLog(true, func(info types.Info, parse_config types.ParseConfig) {
 		entities[info.Entity] = struct{}{}
-	})
-	config := Config{
+	}, types.ParseConfig{})
+	config := types.Config{
 		Facilities: utils.RemoveEmptyStrings(slices.Collect(maps.Keys(facilities))),
 		Levels:     utils.RemoveEmptyStrings(slices.Collect(maps.Keys(levels))),
 		Entities:   utils.RemoveEmptyStrings(slices.Collect(maps.Keys(entities))),
@@ -92,16 +86,16 @@ func generateConfig() Config {
 	return config
 }
 
-func loadConfig() Config {
+func LoadConfig() types.Config {
 	bytes, err := ioutil.ReadFile(configFile())
 	utils.Check(err)
-	var config Config
+	var config types.Config
 	err = json.Unmarshal(bytes, &config)
 	utils.Check(err)
 	return config
 }
 
-func storeConfig(config Config) {
+func storeConfig(config types.Config) {
 	b, err := json.MarshalIndent(config, "", "  ")
 	utils.Check(err)
 	configFile := configFile()
