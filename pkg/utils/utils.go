@@ -21,6 +21,10 @@ func GetString(flags *pflag.FlagSet, name string) string {
 	g, _ := flags.GetString(name)
 	return g
 }
+func GetInt(flags *pflag.FlagSet, name string) int {
+	g, _ := flags.GetInt(name)
+	return g
+}
 
 func RemoveEmptyStrings(l []string) []string {
 	return slices.Collect(func(yield func(string) bool) {

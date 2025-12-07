@@ -18,9 +18,15 @@ type Info struct {
 	Message   string
 }
 
+type Grep struct {
+	After   int
+	Before  int
+	Context int
+}
 type ParseConfig struct {
 	Facility string
 	Level    string
 	Entity   string
 	Service  string
+	Grep     Grep
 }

@@ -19,6 +19,11 @@ const level_flag = "level"
 const entity_flag = "entity"
 const service_flag = "service"
 
+// GREP style context
+const after_flag = "after"
+const before_flag = "before"
+const context_flag = "context"
+
 var conf types.Config
 
 var rootCmd = &cobra.Command{
@@ -52,6 +57,11 @@ var rootCmd = &cobra.Command{
 			Level:    utils.GetString(flags, level_flag),
 			Entity:   utils.GetString(flags, entity_flag),
 			Service:  utils.GetString(flags, service_flag),
+			Grep: types.Grep{
+				utils.GetInt(flags, after_flag),
+				utils.GetInt(flags, before_flag),
+				utils.GetInt(flags, context_flag),
+			},
 		})
 	},
 }
@@ -70,6 +80,10 @@ func init() {
 	rootCmd.Flags().StringP(level_flag, "l", "", "select level")
 	rootCmd.Flags().StringP(entity_flag, "e", "", "select entity")
 	rootCmd.Flags().StringP(service_flag, "s", "", "select service")
+	// GREP flags
+	rootCmd.Flags().IntP(after_flag, "A", 0, "grep after")
+	rootCmd.Flags().IntP(before_flag, "B", 0, "grep before")
+	rootCmd.Flags().IntP(context_flag, "C", 0, "grep context")
 
 	err := rootCmd.RegisterFlagCompletionFunc(facility_flag,
 		func(cmd *cobra.Command, args []string, toComplete string) ([]cobra.Completion, cobra.ShellCompDirective) {
