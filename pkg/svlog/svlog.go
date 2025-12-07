@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 	"svlogj/pkg/types"
+	"svlogj/pkg/utils"
 	"sync/atomic"
 	"time"
 )
@@ -15,7 +16,12 @@ func Svlog(c types.ParseConfig) {
 	ParseLog(false, HandleInterpretedLine, c)
 }
 
-func ParseLog(stop_when_finished bool, line_handler func(types.Info, types.ParseConfig), c types.ParseConfig) {
+func ParseLog(stop_when_finished bool, line_handler func(types.Info, types.ParseConfig, *utils.Fifo[types.Info]), c types.ParseConfig) {
+
+	var fifo utils.Fifo[types.Info]
+	if c.Grep.Before != 0 {
+		fifo = utils.NewFifo[types.Info](c.Grep.Before)
+	}
 
 	line_pattern := regexp.MustCompile(`^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+) ((\w+)\.(\w+):)?(.*).*$`)
 
@@ -66,7 +72,7 @@ func ParseLog(stop_when_finished bool, line_handler func(types.Info, types.Parse
 			Message:   m[5],
 		}
 		guessEntityAndPid(&info)
-		line_handler(info, c)
+		line_handler(info, c, &fifo)
 		running.Store(true)
 	}
 }
@@ -94,16 +100,31 @@ func guessEntityAndPid(info *types.Info) {
 	}
 }
 
-func HandleInterpretedLine(info types.Info, parse_config types.ParseConfig) {
-	if len(parse_config.Entity) != 0 && info.Entity != parse_config.Entity {
+func HandleInterpretedLine(info types.Info, parse_config types.ParseConfig, fifo *utils.Fifo[types.Info]) {
+
+	printer := func(i types.Info) {
+		_, _ = fmt.Printf("%-38v \033[32m%6s\033[0m.\033[36m%-6s\033[0m \033[31m%s\033[0m (%d) %s \n",
+			i.Timestamp, i.Facility, i.Level, i.Entity, i.Pid, i.Message)
+	}
+
+	if len(parse_config.Entity) != 0 && info.Entity != parse_config.Entity || len(parse_config.Level) != 0 && info.Level != parse_config.Level || len(parse_config.Facility) != 0 && info.Facility != parse_config.Facility {
+		if fifo.Cap > 0 {
+			fifo.Push(info)
+		}
 		return
 	}
-	if len(parse_config.Level) != 0 && info.Level != parse_config.Level {
-		return
+	if fifo.Fill > 0 {
+		for {
+			v := fifo.Get()
+			if v == nil {
+				break
+			}
+			printer(*v)
+		}
 	}
-	if len(parse_config.Facility) != 0 && info.Facility != parse_config.Facility {
-		return
+	printer(info)
+	if fifo.Cap != 0 {
+		fmt.Printf("---\n")
 	}
-	_, _ = fmt.Printf("%-38v \033[32m%6s\033[0m.\033[36m%-6s\033[0m \033[31m%s\033[0m (%d) %s \n",
-		info.Timestamp, info.Facility, info.Level, info.Entity, info.Pid, info.Message)
+
 }

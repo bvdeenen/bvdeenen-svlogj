@@ -7,8 +7,8 @@ import (
 func TestNewFifo(t *testing.T) {
 	size := 5
 	f := NewFifo[int](size)
-	if f.cap != size {
-		t.Errorf("Expected cap %d, got %d", size, f.cap)
+	if f.Cap != size {
+		t.Errorf("Expected Cap %d, got %d", size, f.Cap)
 	}
 	if len(f.fifo) != size {
 		t.Errorf("Expected fifo length %d, got %d", size, len(f.fifo))

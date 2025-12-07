@@ -74,7 +74,7 @@ func generateConfig() types.Config {
 	})
 
 	// parse through all of the socklog files to find all the entities
-	svlog.ParseLog(true, func(info types.Info, parse_config types.ParseConfig) {
+	svlog.ParseLog(true, func(info types.Info, parse_config types.ParseConfig, fifo *utils.Fifo[types.Info]) {
 		entities[info.Entity] = struct{}{}
 	}, types.ParseConfig{})
 	config := types.Config{
