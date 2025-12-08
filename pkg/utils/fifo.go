@@ -1,5 +1,7 @@
 package utils
 
+import "errors"
+
 type Fifo[T interface{}] struct {
 	fifo []T
 	tail int
@@ -29,12 +31,13 @@ func (f *Fifo[T]) Push(i T) {
 	}
 }
 
-func (f *Fifo[T]) Get() *T {
+func (f *Fifo[T]) Get() (T, error) {
 	if f.Fill == 0 {
-		return nil
+		var result T
+		return result, errors.New("empty")
 	}
 	f.Fill -= 1
 	v := f.fifo[f.tail]
 	f.tail = (f.tail + 1) % f.Cap
-	return &v
+	return v, nil
 }

@@ -74,8 +74,8 @@ func Execute() {
 
 func init() {
 	// Here you will define your flags and configuration settings.
-	rootCmd.Flags().BoolP(generate_config_flag, "c", false, "Generate Config File from the socklog configuration and current logs content")
-	rootCmd.Flags().StringP(generate_completion_flag, "p", "", "Generate Completion for bash, zsh or fish")
+	rootCmd.Flags().Bool(generate_config_flag, false, "Generate Config File from the socklog configuration and current logs content")
+	rootCmd.Flags().String(generate_completion_flag, "", "Generate Completion for bash, zsh or fish")
 	rootCmd.Flags().StringP(facility_flag, "f", "", "select facility")
 	rootCmd.Flags().StringP(level_flag, "l", "", "select level")
 	rootCmd.Flags().StringP(entity_flag, "e", "", "select entity")

@@ -12,24 +12,38 @@ import (
 	"time"
 )
 
-func Svlog(c types.ParseConfig) {
-	ParseLog(false, HandleInterpretedLine, c)
+type SvLogger struct {
+	LineHandler   func(info types.Info)
+	ParseConfig   types.ParseConfig
+	Follow        bool
+	Fifo          utils.Fifo[types.Info]
+	printedLineNr int // for block separation
+	selectLineNr  int // the line nr that grepped true
 }
 
-func ParseLog(stop_when_finished bool, line_handler func(types.Info, types.ParseConfig, *utils.Fifo[types.Info]), c types.ParseConfig) {
+func Svlog(c types.ParseConfig) {
+	logger := SvLogger{
+		ParseConfig:  c,
+		Follow:       true,
+		selectLineNr: -1,
+	}
+	logger.LineHandler = logger.HandleInterpretedLine
+	logger.ParseLog()
+}
 
-	var fifo utils.Fifo[types.Info]
-	if c.Grep.Before != 0 {
-		fifo = utils.NewFifo[types.Info](c.Grep.Before)
+func (self *SvLogger) ParseLog() {
+
+	if self.ParseConfig.Grep.Before != 0 {
+		self.Fifo = utils.NewFifo[types.Info](self.ParseConfig.Grep.Before)
 	}
 
 	line_pattern := regexp.MustCompile(`^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+) ((\w+)\.(\w+):)?(.*).*$`)
 
 	var cmd *exec.Cmd
-	if len(c.Service) == 0 {
+	if len(self.ParseConfig.Service) == 0 {
 		cmd = exec.Command("svlogtail")
 	} else {
-		cmd = exec.Command("svlogtail", c.Service)
+		cmd = exec.Command("svlogtail", self.ParseConfig.Service)
 	}
 	pipe, _ := cmd.StdoutPipe()
 	defer pipe.Close()
@@ -37,7 +51,7 @@ func ParseLog(stop_when_finished bool, line_handler func(types.Info, types.Parse
 	scanner := bufio.NewScanner(pipe)
 	var running atomic.Bool
 	// go routine to Check if the svlogtail has stopped.
-	if stop_when_finished {
+	if !self.Follow {
 		go func() {
 			for {
 				running.Store(false)
@@ -51,6 +65,7 @@ func ParseLog(stop_when_finished bool, line_handler func(types.Info, types.Parse
 			}
 		}()
 	}
+	lineNr := 0
 	for scanner.Scan() {
 		line := scanner.Text()
 		m := line_pattern.FindStringSubmatch(line)
@@ -70,10 +85,12 @@ func ParseLog(stop_when_finished bool, line_handler func(types.Info, types.Parse
 			Entity:    "",
 			Pid:       0,
 			Message:   m[5],
+			LineNr:    lineNr,
 		}
 		guessEntityAndPid(&info)
-		line_handler(info, c, &fifo)
+		self.LineHandler(info)
 		running.Store(true)
+		lineNr += 1
 	}
 }
 
@@ -100,31 +117,43 @@ func guessEntityAndPid(info *types.Info) {
 	}
 }
 
-func HandleInterpretedLine(info types.Info, parse_config types.ParseConfig, fifo *utils.Fifo[types.Info]) {
+func (self *SvLogger) HandleInterpretedLine(info types.Info) {
 
+	parse_config := self.ParseConfig
 	printer := func(i types.Info) {
-		_, _ = fmt.Printf("%-38v \033[32m%6s\033[0m.\033[36m%-6s\033[0m \033[31m%s\033[0m (%d) %s \n",
-			i.Timestamp, i.Facility, i.Level, i.Entity, i.Pid, i.Message)
-	}
-
-	if len(parse_config.Entity) != 0 && info.Entity != parse_config.Entity || len(parse_config.Level) != 0 && info.Level != parse_config.Level || len(parse_config.Facility) != 0 && info.Facility != parse_config.Facility {
-		if fifo.Cap > 0 {
-			fifo.Push(info)
+		if self.printedLineNr > 0 && i.LineNr != self.printedLineNr+1 {
+			_, _ = fmt.Printf("---\n")
 		}
-		return
+		_, _ = fmt.Printf("%-06d %-38v \033[32m%6s\033[0m.\033[36m%-6s\033[0m \033[31m%s\033[0m (%d) %s \n",
+			i.LineNr, i.Timestamp, i.Facility, i.Level, i.Entity, i.Pid, i.Message)
+		self.printedLineNr = i.LineNr
 	}
-	if fifo.Fill > 0 {
+	selected := (len(parse_config.Entity) == 0 && len(parse_config.Level) == 0 && len(parse_config.Facility) == 0) ||
+		len(parse_config.Entity) != 0 && info.Entity == parse_config.Entity ||
+		len(parse_config.Level) != 0 && info.Level == parse_config.Level ||
+		len(parse_config.Facility) != 0 && info.Facility == parse_config.Facility
+
+	if selected {
+		self.selectLineNr = info.LineNr
+	}
+	if selected && self.Fifo.Fill > 0 {
 		for {
-			v := fifo.Get()
-			if v == nil {
+			v, err := self.Fifo.Get()
+			if err != nil {
 				break
 			}
-			printer(*v)
+			printer(v)
 		}
 	}
-	printer(info)
-	if fifo.Cap != 0 {
-		fmt.Printf("---\n")
+	if selected {
+		printer(info)
+	} else {
+		if parse_config.Grep.After > 0 && self.selectLineNr >= 0 && (info.LineNr-self.selectLineNr) <= parse_config.Grep.After {
+			printer(info)
+		} else {
+			if self.Fifo.Cap > 0 {
+				self.Fifo.Push(info)
+			}
+		}
 	}
-
 }

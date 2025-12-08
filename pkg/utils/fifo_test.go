@@ -18,20 +18,13 @@ func TestNewFifo(t *testing.T) {
 	}
 }
 
-func check(t testing.TB, val *int, expected int) {
+func check(t testing.TB, val int, expected int) {
 	t.Helper()
-	if val == nil {
-		t.Errorf("Expected %d, got nil", expected)
-	} else if *val != expected {
-		t.Errorf("Expected %d, got %v", expected, *val)
+	if val != expected {
+		t.Errorf("Expected %d, got %v", expected, val)
 	}
 }
-func check_nil(t testing.TB, val *int) {
-	t.Helper()
-	if val != nil {
-		t.Errorf("Expected nil, got %v", *val)
-	}
-}
+
 func TestPushWithinSize(t *testing.T) {
 	f := NewFifo[int](3)
 	f.Push(1)
@@ -39,14 +32,17 @@ func TestPushWithinSize(t *testing.T) {
 	f.Push(3)
 
 	// Let's test Get.
-	val := f.Get()
+	val, _ := f.Get()
 	check(t, val, 1)
-	val = f.Get()
+	val, _ = f.Get()
 	check(t, val, 2)
-	val = f.Get()
+	val, _ = f.Get()
 	check(t, val, 3)
-	val = f.Get()
-	check_nil(t, val)
+	_, err := f.Get()
+	if err == nil {
+		t.Errorf("Expected error, got nil")
+
+	}
 }
 
 func TestPushBelowSize(t *testing.T) {
@@ -55,14 +51,25 @@ func TestPushBelowSize(t *testing.T) {
 	f.Push(2)
 
 	// Let's test Get.
-	check(t, f.Get(), 1)
-	check(t, f.Get(), 2)
-	check_nil(t, f.Get())
+	val, _ := f.Get()
+	check(t, val, 1)
+	val, _ = f.Get()
+	check(t, val, 2)
+	_, err := f.Get()
+	if err == nil {
+		t.Errorf("Expected error, got nil")
+	}
 	f.Push(3)
 	f.Push(4)
-	check(t, f.Get(), 3)
-	check(t, f.Get(), 4)
-	check_nil(t, f.Get())
+	val, _ = f.Get()
+	check(t, val, 3)
+	val, _ = f.Get()
+	check(t, val, 4)
+	_, err = f.Get()
+	if err == nil {
+		t.Errorf("Expected error, got nil")
+
+	}
 }
 
 func TestPushOverflow(t *testing.T) {
@@ -72,13 +79,24 @@ func TestPushOverflow(t *testing.T) {
 	f.Push(3)
 	f.Push(4) // Should overwrite 1, now fifo=[4,2,3], head=1, tail=1? Wait.
 
-	check(t, f.Get(), 2)
-	check(t, f.Get(), 3)
-	check(t, f.Get(), 4)
-	check_nil(t, f.Get())
+	val, _ := f.Get()
+	check(t, val, 2)
+	val, _ = f.Get()
+	check(t, val, 3)
+	val, _ = f.Get()
+	check(t, val, 4)
+	_, err := f.Get()
+	if err == nil {
+		t.Errorf("Expected error, got nil")
+
+	}
 }
 
 func TestGetFromEmpty(t *testing.T) {
 	f := NewFifo[int](3)
-	check_nil(t, f.Get())
+	_, err := f.Get()
+	if err == nil {
+		t.Errorf("Expected error, got nil")
+
+	}
 }

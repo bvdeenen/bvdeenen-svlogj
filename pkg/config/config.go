@@ -72,11 +72,15 @@ func generateConfig() types.Config {
 		}
 		return nil
 	})
+	svLogger := svlog.SvLogger{
+		Follow: false,
+		LineHandler: func(info types.Info) {
+			entities[info.Entity] = struct{}{}
+		},
+	}
 
 	// parse through all of the socklog files to find all the entities
-	svlog.ParseLog(true, func(info types.Info, parse_config types.ParseConfig, fifo *utils.Fifo[types.Info]) {
-		entities[info.Entity] = struct{}{}
-	}, types.ParseConfig{})
+	svLogger.ParseLog()
 	config := types.Config{
 		Facilities: utils.RemoveEmptyStrings(slices.Collect(maps.Keys(facilities))),
 		Levels:     utils.RemoveEmptyStrings(slices.Collect(maps.Keys(levels))),

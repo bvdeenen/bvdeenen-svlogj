@@ -16,6 +16,7 @@ type Info struct {
 	Entity    string
 	Pid       int
 	Message   string
+	LineNr    int
 }
 
 type Grep struct {
