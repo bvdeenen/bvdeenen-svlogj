@@ -1,6 +1,6 @@
 # This workflow builds and releases a binary
 
-name: Go
+name: Release new version
 
 on:
   push:
