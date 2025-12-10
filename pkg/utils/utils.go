@@ -10,12 +10,6 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func Check(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
-
 func GetBool(flags *pflag.FlagSet, name string) bool {
 	g, _ := flags.GetBool(name)
 	return g
@@ -46,6 +40,6 @@ func RemoveEmptyStrings(l iter.Seq[string]) []string {
 	})
 }
 
-func NoFilesEmptyCompletion(cmd *cobra.Command, args []string, complete string) ([]string, cobra.ShellCompDirective) {
+func NoFilesEmptyCompletion(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
 	return nil, cobra.ShellCompDirectiveNoFileComp
 }

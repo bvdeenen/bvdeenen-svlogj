@@ -9,6 +9,6 @@ test:
 	go test -v ./pkg/utils
 
 install_completion: svlogj
-	./svlogj --generate-completion=bash > ~/.bash_completion.d/svlogj
+	./svlogj completion bash > ~/.bash_completion.d/svlogj
 
 # vim:ft=Make:noexpandtab

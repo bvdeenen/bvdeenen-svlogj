@@ -3,7 +3,6 @@ package config
 import (
 	"bufio"
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -14,6 +13,7 @@ import (
 	"svlogj/pkg/utils"
 
 	"github.com/adrg/xdg"
+	"github.com/spf13/cobra"
 )
 
 func ParseAndStoreConfig() {
@@ -27,7 +27,7 @@ func generateConfig() types.Config {
 	entities := utils.NewSet[string]()
 	services := utils.NewSet[string]()
 	parse := func(line string) {
-		re := regexp.MustCompile(`^([^.]+)\.([^:]+)(?::?(.*))$`)
+		re := regexp.MustCompile(`^([^.]+)\.([^:]+):?(.*)$`)
 		if 0 == len(line) || line == "*" {
 			return
 		}
@@ -39,14 +39,17 @@ func generateConfig() types.Config {
 
 	root := "/var/log/socklog"
 	_ = filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
-		utils.Check(err)
+		cobra.CheckErr(err)
 		if d.IsDir() && path != root {
 			services.Add(d.Name())
 		}
 		if d.Name() == "config" && !d.IsDir() {
 			file, err := os.Open(path)
-			utils.Check(err)
-			defer file.Close()
+			cobra.CheckErr(err)
+			defer func(file *os.File) {
+				err := file.Close()
+				cobra.CheckErr(err)
+			}(file)
 			scanner := bufio.NewScanner(file)
 			for scanner.Scan() {
 				line := scanner.Text()
@@ -70,7 +73,9 @@ func generateConfig() types.Config {
 		return nil
 	})
 	svLogger := svlog.SvLogger{
-		Follow: false,
+		ParseConfig: types.ParseConfig{
+			Follow: false,
+		},
 		LineHandler: func(info types.Info) {
 			entities.Add(info.Entity)
 		},
@@ -87,24 +92,28 @@ func generateConfig() types.Config {
 }
 
 func LoadConfig() types.Config {
-	bytes, err := ioutil.ReadFile(configFile())
-	utils.Check(err)
+	bytes, err := os.ReadFile(configFile())
+	cobra.CheckErr(err)
 	var config types.Config
 	err = json.Unmarshal(bytes, &config)
-	utils.Check(err)
+	cobra.CheckErr(err)
 	return config
 }
 
 func storeConfig(config types.Config) {
-	b, err := json.MarshalIndent(config, "", "  ")
-	utils.Check(err)
+	serializedConfig, err := json.MarshalIndent(config, "", "  ")
+	cobra.CheckErr(err)
 	configFile := configFile()
 	err = os.MkdirAll(path.Dir(configFile), 0700)
-	utils.Check(err)
+	cobra.CheckErr(err)
 	f, err := os.Create(configFile)
-	utils.Check(err)
-	defer f.Close()
-	f.Write(b)
+	cobra.CheckErr(err)
+	defer func(f *os.File) {
+		err := f.Close()
+		cobra.CheckErr(err)
+	}(f)
+	_, err = f.Write(serializedConfig)
+	cobra.CheckErr(err)
 }
 
 func configFile() string {
