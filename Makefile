@@ -1,9 +1,10 @@
 .PHONY: install_completion test
 
 files := $(shell find . -name "*.go")
+version:= $(shell git describe --tags HEAD)
 
 svlogj: ${files} go.mod Makefile
-	go build -o $@
+	go build -ldflags "-X github.com/bvdeenen/svlogj/cmd.Version=${version}" -o $@
 
 test:
 	go test -v ./pkg/utils

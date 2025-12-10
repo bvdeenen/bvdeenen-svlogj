@@ -68,7 +68,7 @@ func (l *SvLogger) ParseLog() {
 	}
 	pipe, _ := cmd.StdoutPipe()
 	defer func(pipe io.ReadCloser) {
-		cobra.CheckErr(pipe.Close())
+		_ = pipe.Close()
 	}(pipe)
 	cobra.CheckErr(cmd.Start())
 	
