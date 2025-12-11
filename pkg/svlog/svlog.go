@@ -71,7 +71,7 @@ func (l *SvLogger) ParseLog() {
 		_ = pipe.Close()
 	}(pipe)
 	cobra.CheckErr(cmd.Start())
-	
+
 	scanner := bufio.NewScanner(pipe)
 	var running atomic.Bool
 	// go routine to Check if the svlogtail has stopped.
