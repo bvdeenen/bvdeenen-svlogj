@@ -2,11 +2,17 @@ package types
 
 import "time"
 
+type ConfigFile struct {
+	Service string
+	Lines   []string
+}
+
 type Config struct {
-	Facilities []string `json:"facilities"`
-	Levels     []string `json:"levels"`
-	Entities   []string `json:"entities"`
-	Services   []string `json:"services"`
+	Facilities  []string     `json:"facilities"`
+	Levels      []string     `json:"levels"`
+	Entities    []string     `json:"entities"`
+	Services    []string     `json:"services"`
+	ConfigFiles []ConfigFile `json:"config_files"`
 }
 
 type Info struct {
