@@ -1,4 +1,4 @@
-// Package cmd 
+// Package cmd
 package cmd
 
 import (
@@ -11,7 +11,7 @@ import (
 var completionCmd = &cobra.Command{
 	Use:   "completion",
 	Short: "generate a completion for your shell",
-	Long: `svlogj completion bash|zsh|fish --help to see tips for installing the completion`,
+	Long:  `svlogj completion bash|zsh|fish --help to see tips for installing the completion`,
 }
 
 func init() {
@@ -22,11 +22,13 @@ func init() {
 }
 
 var bashCompletion = &cobra.Command{
-	Use:                        "bash",
-	Long:                       `Generate the autocompletion script for the bash shell.
+	Use: "bash",
+	Long: `Generate the autocompletion script for the bash shell.
 
 This script depends on the 'bash-completion' package.
-If it is not installed already, you can install it via your OS's package manager.
+If it is not installed already, you can install it with
+
+	sudo xbps-install bash-completion
 
 To load completions in your current shell session:
 
@@ -34,24 +36,19 @@ To load completions in your current shell session:
 
 To load completions for every new session, execute once:
 
-#### Linux:
 
-        svlogj completion bash > ~/.bash_completion.d/svlogj or
-        svlogj completion bash > /etc/bash_completion.d/svlogj
-
-#### macOS:
-
-        svlogj completion bash > /usr/local/etc/bash_completion.d/svlogj
+	svlogj completion bash > ~/.local/share/bash-completion/completions/svlogj or
+	svlogj completion bash > /usr/share/bash-completion/completions/svlogj
 
 You will need to start a new shell for this setup to take effect.
 	`,
-	ValidArgsFunction:          utils.NoFilesEmptyCompletion,
+	ValidArgsFunction: utils.NoFilesEmptyCompletion,
 	Run: func(cmd *cobra.Command, args []string) {
 		_ = cmd.Root().GenBashCompletion(cmd.OutOrStdout())
 	},
 }
 var zshCompletion = &cobra.Command{
-	Use:                        "zsh",
+	Use: "zsh",
 	Long: `
 	Generate the autocompletion script for the zsh shell.
 
@@ -62,22 +59,16 @@ var zshCompletion = &cobra.Command{
 
 	To load completions for every new session, execute once:
 
-	#### Linux:
-
 	svlogj completion zsh > "${fpath[1]}/_svlogj"
 
-	#### macOS:
-
-	svlogj completion zsh > /usr/local/share/zsh/site-functions/_svlogj
-
 	You will need to start a new shell for this setup to take effect.`,
-	ValidArgsFunction:          utils.NoFilesEmptyCompletion,
+	ValidArgsFunction: utils.NoFilesEmptyCompletion,
 	Run: func(cmd *cobra.Command, args []string) {
 		_ = cmd.Root().GenZshCompletion(cmd.OutOrStdout())
 	},
 }
 var fishCompletion = &cobra.Command{
-	Use:                        "fish",
+	Use: "fish",
 	Long: `
 Generate the autocompletion script for the fish shell.
 
@@ -91,7 +82,7 @@ To load completions for every new session, execute once:
 
 You will need to start a new shell for this setup to take effect.
 	`,
-	ValidArgsFunction:          utils.NoFilesEmptyCompletion,
+	ValidArgsFunction: utils.NoFilesEmptyCompletion,
 	Run: func(cmd *cobra.Command, args []string) {
 		_ = cmd.Root().GenFishCompletion(cmd.OutOrStdout(), true)
 	},

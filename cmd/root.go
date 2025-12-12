@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"os"
 	"svlogj/pkg/config"
 	"svlogj/pkg/svlog"
 	"svlogj/pkg/types"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 )
+
 
 const facilityFlag = "facility"
 const levelFlag = "level"
@@ -55,6 +57,7 @@ func Execute() {
 	cobra.CheckErr(rootCmd.Execute())
 }
 
+
 func init() {
 	rootCmd.Flags().StringP(facilityFlag, "f", "", "select facility")
 	rootCmd.Flags().StringP(levelFlag, "l", "", "select level")
@@ -64,10 +67,10 @@ func init() {
 	rootCmd.Flags().IntP(afterFlag, "A", 0, "grep after")
 	rootCmd.Flags().IntP(beforeFlag, "B", 0, "grep before")
 	rootCmd.Flags().IntP(contextFlag, "C", 0, "grep context")
-	rootCmd.Flags().String(timeConfigFlag, "", "timeconfig")
-	rootCmd.Flags().Bool(followFlag, false, "follow")
-	rootCmd.Flags().Bool(monochromeFlag, false, "monochrome output")
-	rootCmd.Flags().String(ansiColorFlag, "1;33", "ansi color for match")
+	rootCmd.Flags().String(timeConfigFlag, envTimeConfig(), "timeconfig")
+	rootCmd.Flags().Bool(followFlag, envFollow(), "follow")
+	rootCmd.Flags().Bool(monochromeFlag, envMonochrome(), "monochrome output")
+	rootCmd.Flags().String(ansiColorFlag, envAnsiColor(), "ansi color for match")
 
 	err := rootCmd.RegisterFlagCompletionFunc(timeConfigFlag,
 		func(cmd *cobra.Command, args []string, toComplete string) ([]cobra.Completion, cobra.ShellCompDirective) {
@@ -103,4 +106,32 @@ func init() {
 			return conf.Services, cobra.ShellCompDirectiveNoFileComp
 		})
 	cobra.CheckErr(err)
+}
+
+func envFollow() bool {
+	return len(os.Getenv("SVLOGJ_FOLLOW"))!=0
+}
+
+func envMonochrome() bool {
+	return len(os.Getenv("SVLOGJ_MONOCHROME"))!=0
+}
+
+func envAnsiColor() string {
+	v := os.Getenv("SVLOGJ_ANSICOLOR")
+	if len(v)!=0 {
+		return v
+	}
+	return "1;33"
+}
+
+func envTimeConfig() string {
+	return os.Getenv("SVLOGJ_TIMECONFIG")
+}
+
+func SocklogDir() string {
+	v:= os.Getenv("SVLOGJ_SOCKLOGDIR")
+	if len(v)!=0 {
+		return v
+	}
+	return "/var/log/socklog"
 }

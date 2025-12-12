@@ -4,6 +4,7 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -14,13 +15,14 @@ import (
 
 func main() {
 
-	file, err := os.Open("/var/log/socklog")
+	file, err := os.Open(cmd.SocklogDir())
 	if err != nil {
-		switch err.(type) {
-		case *fs.PathError:
-			fmt.Print(`Permissions error!
+		var pathError *fs.PathError
+		switch {
+		case errors.As(err, &pathError):
+			fmt.Printf(`Permissions error!
 
-We need to be able to read recursively from /var/log/socklog,
+We need to be able to read recursively from %s,
 for the 'config' files, as well as for reading the log via 'svlogtail'.
 
 Add yourself to the socklog group
@@ -28,9 +30,8 @@ Add yourself to the socklog group
 	sudo usermod -aG socklog $USER
 
 and then log out and log in again (or use 'newgrp socklog' in an existing shell)
-`)
+`, cmd.SocklogDir())
 			os.Exit(1)
-			break
 		default:
 			cobra.CheckErr(err)
 		}
